@@ -1,21 +1,47 @@
-# Node.js
-# Build a general Node.js project with npm.
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+# Node.js CI/CD Pipeline for Azure Web App
+# Compila, construye y despliega tu app automáticamente
 
 trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 steps:
+
+# 1️⃣ Instalar Node.js
 - task: NodeTool@0
   inputs:
     versionSpec: '20.x'
   displayName: 'Install Node.js'
 
+# 2️⃣ Instalar dependencias y construir
 - script: |
     npm install
     npm run build
   displayName: 'npm install and build'
+
+# 3️⃣ Comprimir el proyecto para desplegar
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/build.zip'
+    replaceExistingArchive: true
+  displayName: 'Archive files'
+
+# 4️⃣ Publicar artefacto para que Azure pueda desplegarlo
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: '$(Build.ArtifactStagingDirectory)/build.zip'
+    artifactName: 'drop'
+  displayName: 'Publish Artifact'
+
+# 5️⃣ Desplegar a Azure Web App
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: 'bellakeo22649'   # ⭐ CAMBIA ESTO por tu Service Connection
+    appName: 'bellakitosut22649'                       # ⭐ CAMBIA ESTO: nombre EXACTO de tu Web App
+    package: '$(Build.ArtifactStagingDirectory)/build.zip'
+  displayName: 'Deploying to Azure Web App'
